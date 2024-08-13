@@ -15,15 +15,14 @@ class MarkerDecoder:
         stereo_image_markers = StereoImageMarkers.GetRootAsStereoImageMarkers(buf, 0)
 
         # Process left and right image markers
-        left_markers_info = self.process_image_markers(stereo_image_markers.LeftImage(), "Left")
-        right_markers_info = self.process_image_markers(stereo_image_markers.RightImage(), "Right")
+        left_markers_info = self.process_image_markers(stereo_image_markers.LeftImage())
+        right_markers_info = self.process_image_markers(stereo_image_markers.RightImage())
 
         return {"left": left_markers_info, "right": right_markers_info}
 
-    def process_image_markers(self, image, side_name):
+    def process_image_markers(self, image):
         """Process markers for the given image and return as a dictionary."""
         markers_info = {
-            "side": side_name,
             "image_name": "",
             "markers": []
         }

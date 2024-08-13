@@ -7,11 +7,14 @@ import flatbuffers
 from .aruco_msgs_generated import StereoImageMarkers, ImageMarkers, Marker, Point2D
 from .msg_decoder import MarkerDecoder
 import json
+from aruco_interface.msg import StereoImageMarkers, ImageMarkers, Marker, Point2D
+
+
 class UDPClientPublisher(Node):
 
     def __init__(self):
         super().__init__('udp_client_publisher')
-        self.publisher_ = self.create_publisher(String, 'example_topic', 10)
+        self.publisher_ = self.create_publisher(StereoImageMarkers, 'stereo_aruco', 10)
         self.get_logger().info("UDPClientPublisher node has been started.")
 
         # Create a UDP socket
@@ -39,26 +42,50 @@ class UDPClientPublisher(Node):
         try:
             # Decode the buffer and log the marker information
             markers_info = self.marker_decoder.decode(buf)
-            self.get_logger().info(f"Left Image Markers: {json.dumps(markers_info['left'], indent=4)}")
-            self.get_logger().info(f"Right Image Markers: {json.dumps(markers_info['right'], indent=4)}")
+            # self.get_logger().info(f"Left Image Markers: {json.dumps(markers_info['left'], indent=4)}")
+            # self.get_logger().info(f"Right Image Markers: {json.dumps(markers_info['right'], indent=4)}")
+
+            self.publish_message(markers_info)
         except ValueError as e:
             self.get_logger().error(str(e))
-
-        # self.get_logger().info(f"Received: {data.decode('utf-8')} from {addr}")
-
-        # Publish the received message
-        # self.publish_message(data.decode('utf-8'))
 
         end_time = time.time()  # Record the end time
         elapsed_time = end_time - start_time  # Calculate the elapsed time
 
         self.get_logger().info(f"Callback execution time: {elapsed_time:.4f} seconds. Frequency: {1.0 / elapsed_time:.2f} Hz")
 
-    def publish_message(self, message):
-        msg = String()
-        msg.data = message
-        self.publisher_.publish(msg)
-        self.get_logger().info(f'Published: "{msg.data}"')
+
+
+    def publish_message(self, markers_info):
+        # print(markers_info)
+        
+        left_markers = self.create_image_markers_msg(markers_info['left'])
+        right_markers = self.create_image_markers_msg(markers_info['right'])
+
+        stereo_image_markers_msg = StereoImageMarkers()
+        stereo_image_markers_msg.left_image = left_markers
+        stereo_image_markers_msg.right_image = right_markers
+
+        print(stereo_image_markers_msg)
+        self.publisher_.publish(stereo_image_markers_msg)
+
+    def create_image_markers_msg(self, markers_info):
+        image_markers_msg = ImageMarkers()
+        image_markers_msg.image_name = markers_info['image_name']   
+        markers = markers_info['markers']
+        for marker in markers:
+            marker_msg = Marker()
+            marker_msg.id = marker['id']
+            corners = marker['corners']
+            # print(corners)
+            for corner in corners:
+                point = Point2D()
+                point.x = corner['x']
+                point.y = corner['y']
+                marker_msg.corners.append(point)
+            image_markers_msg.markers.append(marker_msg)
+       
+        return image_markers_msg
 
 def main(args=None):
     rclpy.init(args=args)
