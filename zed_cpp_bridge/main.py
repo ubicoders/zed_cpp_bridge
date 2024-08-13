@@ -42,7 +42,7 @@ class UDPClientPublisher(Node):
         try:
             # Decode the buffer and log the marker information
             markers_info = self.marker_decoder.decode(buf)
-            # self.get_logger().info(f"Left Image Markers: {json.dumps(markers_info['left'], indent=4)}")
+            #self.get_logger().info(f"Left Image Markers: {json.dumps(markers_info['left'], indent=4)}")
             # self.get_logger().info(f"Right Image Markers: {json.dumps(markers_info['right'], indent=4)}")
 
             self.publish_message(markers_info)
@@ -66,25 +66,28 @@ class UDPClientPublisher(Node):
         stereo_image_markers_msg.left_image = left_markers
         stereo_image_markers_msg.right_image = right_markers
 
-        print(stereo_image_markers_msg)
+        #print(stereo_image_markers_msg)
         self.publisher_.publish(stereo_image_markers_msg)
 
     def create_image_markers_msg(self, markers_info):
         image_markers_msg = ImageMarkers()
         image_markers_msg.image_name = markers_info['image_name']   
+        image_markers_msg.markers = []
         markers = markers_info['markers']
+
         for marker in markers:
-            marker_msg = Marker()
-            marker_msg.id = marker['id']
+            marker_id = marker['id']
             corners = marker['corners']
-            # print(corners)
+            corners_list = []
             for corner in corners:
                 point = Point2D()
                 point.x = corner['x']
                 point.y = corner['y']
-                marker_msg.corners.append(point)
+                corners_list.append(point)
+            marker_msg = Marker()
+            marker_msg.id = marker_id
+            marker_msg.corners = corners_list
             image_markers_msg.markers.append(marker_msg)
-       
         return image_markers_msg
 
 def main(args=None):
